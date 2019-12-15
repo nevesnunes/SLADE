@@ -492,7 +492,7 @@ wxSize SCallTip::drawCallTip(wxDC& dc, int xoff, int yoff)
 			int width = dc.GetTextExtent("X/X").x;
 			dc.SetTextForeground(wxcol_fg);
 			dc.DrawLabel(
-				S_FMT("%d/%d", context_current_ + 1, function_->contexts().size()),
+				S_FMT("%d/%lu", context_current_ + 1, function_->contexts().size()),
 				wxNullBitmap,
 				wxRect(rect_btn_up_.GetRight() + UI::scalePx(4), yoff, width, 900),
 				wxALIGN_CENTER_HORIZONTAL);
@@ -573,7 +573,7 @@ wxSize SCallTip::drawCallTip(wxDC& dc, int xoff, int yoff)
 				wxRect rect;
 				drawText(
 					dc,
-					S_FMT("... %d more", function_->contexts().size() - num),
+					S_FMT("... %lu more", function_->contexts().size() - num),
 					xoff,
 					bottom + UI::scalePx(11),
 					&rect
@@ -652,8 +652,23 @@ void SCallTip::onPaint(wxPaintEvent& e)
 		border2 = WXCOL(c);
 	}
 
-	// Draw border
+	// Draw background
 	dc.SetBrush(wxBrush(bg));
+	dc.SetPen(*wxTRANSPARENT_PEN);
+	dc.DrawRectangle(0, 0, GetSize().x, GetSize().y);
+
+	// Draw text
+#ifdef __WXOSX__
+	// Not sure if it's an osx or high-dpi issue (or both),
+	// but for some reason wx does not properly scale the bitmap when drawing it,
+	// so just draw the entire calltip again in this case
+	drawCallTip(dc, 12, 8);
+#else
+	dc.DrawBitmap(buffer_, UI::scalePx(12), UI::scalePx(8), true);
+#endif
+
+	// Draw border
+	dc.SetBrush(*wxTRANSPARENT_BRUSH);
 	dc.SetPen(wxPen(border));
 	dc.DrawRectangle(0, 0, GetSize().x, GetSize().y);
 	dc.SetPen(wxPen(border2));
@@ -665,16 +680,6 @@ void SCallTip::onPaint(wxPaintEvent& e)
 	dc.DrawPoint(1, GetSize().y - 2);
 	dc.DrawPoint(GetSize().x - 2, GetSize().y - 2);
 	dc.DrawPoint(GetSize().x - 2, 1);
-
-	// Draw text
-#ifdef __WXOSX__
-	// Not sure if it's an osx or high-dpi issue (or both),
-	// but for some reason wx does not properly scale the bitmap when drawing it,
-	// so just draw the entire calltip again in this case
-	drawCallTip(dc, 12, 8);
-#else
-	dc.DrawBitmap(buffer_, UI::scalePx(12), UI::scalePx(8), true);
-#endif
 }
 
 // ----------------------------------------------------------------------------
